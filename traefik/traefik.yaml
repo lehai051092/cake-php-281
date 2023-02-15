@@ -1,0 +1,53 @@
+global:
+    checkNewVersion: false
+    sendAnonymousUsage: false
+
+api:
+    insecure: true
+    dashboard: true
+    # debug: true
+
+ping: {}
+
+# accessLog: {}
+
+serversTransport:
+    insecureSkipVerify: true
+
+# log:
+#     level: DEBUG
+
+entryPoints:
+    http:
+        address: ":80"
+    https:
+        address: ":443"
+        http:
+            tls:
+                certResolver: letsencrypt
+    mysql:
+        address: ":3306"
+    elasticsearch:
+        address: ":9200"
+    port4000:
+        address: ":4000"
+    port8081:
+        address: ":8081"
+    port9099:
+        address: ":9099"
+providers:
+    docker:
+        network: proxy
+        exposedByDefault: false
+    file:
+        directory: "/etc/traefik/dynamic"
+        watch: true
+
+certificatesResolvers:
+    letsencrypt:
+        acme:
+            caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
+            email: "webmaster@gmail.com"
+            storage: letsencrypt/acme.json
+            httpChallenge:
+                entryPoint: http

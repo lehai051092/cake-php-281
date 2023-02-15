@@ -1,0 +1,98 @@
+version: '3.8'
+services:
+  proxy:
+    image: traefik
+    labels:
+      - mkcert.services.traefik=''
+      - traefik.enable=true
+      - traefik.http.routers.traefik.rule=Host(`traefik`)
+      - traefik.http.routers.traefik.entrypoints=http,https
+      - traefik.http.routers.traefik.service=api@internal
+    volumes:
+      - ./traefik.yaml:/etc/traefik/traefik.yaml
+      - ./conf/traefik:/etc/traefik/dynamic
+      - letsencrypt-acme:/letsencrypt
+      - ssl-certs:/etc/cert
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      VIRTUAL_HOST: traefik
+    ports:
+      - 0.0.0.0:80:80
+      - 0.0.0.0:443:443
+      - 0.0.0.0:8080:8080
+    networks:
+      - proxy
+      - gateway
+    restart: &restart unless-stopped
+    container_name: proxy
+    security_opt:
+      - no-new-privileges:true
+    logging: &logging
+      options:
+        max-size: "10m"
+        max-file: "3"
+  mkcert:
+    image: lehai0510/mkcert
+    volumes:
+      - ssl-certs:/app/certs:rw
+      - ~/.mozilla/firefox:/root/.mozilla/firefox:rw
+      - ~/.pki/nssdb:/root/.pki/nssdb:rw
+      - ~/.local/share/mkcert:/app/ca:rw
+      - ${CA_STORE:-/usr/local/share/ca-certificates}:/usr/local/share/ca-certificates
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./conf/traefik:/traefik
+    network_mode: none
+    restart: *restart
+    container_name: mkcert
+    depends_on:
+      - proxy
+    logging: *logging
+  adminer:
+    image: adminer
+    command: php -S 0.0.0.0:8080 -t /var/www/html
+    environment:
+      ADMINER_PLUGINS: tables-filter json-column table-indexes-structure
+    ports:
+      - 0.0.0.0:81:8080
+    networks:
+      - database
+    restart: *restart
+    container_name: adminer
+    logging: *logging
+  maildev:
+    image: rogerdz/maildev
+    command: --mail-directory /var/maildev/data
+    volumes:
+      - maildev-data:/var/maildev/data
+    ports:
+      - 0.0.0.0:82:1080
+    networks:
+      - mail
+      - esnet
+    restart: *restart
+    container_name: maildev
+    logging: *logging
+networks:
+  proxy:
+    driver: bridge
+    name: proxy
+  gateway:
+    driver: bridge
+    name: gateway
+  database:
+    driver: bridge
+    name: database
+  mail:
+    driver: bridge
+    name: mail
+  esnet:
+    driver: bridge
+    name: esnet
+volumes:
+  letsencrypt-acme:
+  ssl-certs:
+    name: ssl-certs
+  maildev-data:
+  postfix_dkim:
+  postfix_config:
+  postfix_data:

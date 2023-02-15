@@ -1,0 +1,16 @@
+http:
+    middlewares:
+        https-redirect:
+            redirectScheme:
+                scheme: https
+                permanent: true
+        adminer-stripprefix:
+            stripPrefix:
+                prefixes:
+                    - "/adminer"
+                    - "/adminer/"
+        rabbitmq-stripprefix:
+            stripPrefix:
+                prefixes:
+                    - "/rabbitmq"
+                    - "/rabbitmq/"
